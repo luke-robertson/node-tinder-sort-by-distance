@@ -8,8 +8,8 @@ const writeToFile = util.promisify(fs.writeFile)
 const token = ''
 
 //
-// THIS IS TERRIBLE CODE, I DONT CARE
-// IT MAY GET STUCK IF YOU HAVE A LOT OF MATCHES, I DONT CARE EITHER
+// THIS IS TERRIBLE CODE
+// IT MAY GET STUCK IF YOU HAVE A LOT OF MATCHES, TRY AGAIN
 //
 
 const allMatches = []
