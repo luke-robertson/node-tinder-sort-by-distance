@@ -12,6 +12,10 @@ const token = ''
 // IT MAY GET STUCK IF YOU HAVE A LOT OF MATCHES, TRY AGAIN
 //
 
+if (!token) {
+  throw new Error('No token provided - read the README.md')
+}
+
 const allMatches = []
 const allMatchesProfiles = []
 
