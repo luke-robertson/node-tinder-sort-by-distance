@@ -25,8 +25,12 @@ const headers = {
 }
 
 const fetchData = async url => {
-  const res = await fetch(`${endPoint}/${url}`, { method: 'GET', headers })
-  return await res.json()
+  try {
+    const res = await fetch(`${endPoint}/${url}`, { method: 'GET', headers })
+    return await res.json()
+  } catch (e) {
+    console.log('Something broke', e)
+  }
 }
 
 const getMatches = async (messageType, token = undefined) => {
