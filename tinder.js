@@ -4,9 +4,8 @@ const fs = require('fs')
 const util = require('util')
 const writeToFile = util.promisify(fs.writeFile)
 
-// x-auth-token
+// x-auth-token - readme.md
 const token = ''
-// LOGIN TO TINDER WEB APP, OPEN DEV TOOLS, FIND MATCHES API REQUIRE GET THE TOKEN OUT THE GET HEADER
 
 //
 // THIS IS TERRIBLE CODE, I DONT CARE
