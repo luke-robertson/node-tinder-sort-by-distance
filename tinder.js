@@ -4,8 +4,6 @@ const fs = require('fs')
 const util = require('util')
 const writeToFile = util.promisify(fs.writeFile)
 
-const endPoint = 'https://api.gotinder.com'
-
 // x-auth-token
 const token = ''
 // LOGIN TO TINDER WEB APP, OPEN DEV TOOLS, FIND MATCHES API REQUIRE GET THE TOKEN OUT THE GET HEADER
@@ -26,7 +24,7 @@ const headers = {
 
 const fetchData = async url => {
   try {
-    const res = await fetch(`${endPoint}/${url}`, { method: 'GET', headers })
+    const res = await fetch(`https://api.gotinder.com/${url}`, { method: 'GET', headers })
     return await res.json()
   } catch (e) {
     console.log('Something broke', e)
