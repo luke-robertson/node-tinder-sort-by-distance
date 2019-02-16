@@ -2,8 +2,8 @@
 const fetch = require('node-fetch')
 const fs = require('fs')
 const util = require('util')
-const fs_writeFile = util.promisify(fs.writeFile)
-const https = require('https')
+const writeToFile = util.promisify(fs.writeFile)
+
 const endPoint = 'https://api.gotinder.com'
 
 // x-auth-token
@@ -84,7 +84,7 @@ const run = async () => {
     await getProfile(id)
     // do this inside the loop, its slow but it mmeans if you got 1k matches and only make 500 its not pointless
     const sortData = allMatchesProfiles.sort((a, b) => a.distance_mi - b.distance_mi)
-    await fs_writeFile('data.json', JSON.stringify(sortData, null, 4))
+    await writeToFile('data.json', JSON.stringify(sortData, null, 4))
   }
 
   console.log('DONE')
