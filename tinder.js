@@ -29,17 +29,19 @@ const fetchData = async url => {
   return await res.json()
 }
 
-const getMatches = async (token, message) => {
+const getMatches = async (messageType, token = undefined) => {
   try {
     const matches = await fetchData(
-      `v2/matches?count=60&is_tinder_u=false&locale=en-GB&message=${message ? '0' : '1'}${
+      `v2/matches?count=60&is_tinder_u=false&locale=en-GB&message=${messageType}${
         token ? `&page_token=${token}` : ''
       }`
     )
+    // pushing to array is not ideal, better soiltion ?
     allMatches.push(...matches.data.matches.map(item => item.person._id))
+    // if a token is returned, there are more results, loop its self untill none left
     const tokenId = matches.data.next_page_token
     if (tokenId) {
-      await getMatches(tokenId, message)
+      await getMatches(messageType, tokenId)
     }
   } catch (e) {
     console.log(`Error with: ${token}`)
@@ -51,6 +53,7 @@ const getProfile = async id => {
     const data = await fetchData(`user/${id}?locale=en-GB`)
     const { name, distance_mi } = data.results
     console.log(name)
+    // again not idea, but it easy
     allMatchesProfiles.push({ name, distance_mi })
   } catch (e) {
     console.log(`Error with ${id}`)
@@ -67,8 +70,9 @@ const getProfile = async id => {
 
 const run = async () => {
   // await auth()
-  await getMatches()
-  await getMatches(undefined, true)
+  // the number here is 1 = matches with messges, 0 = matches with no messages
+  await getMatches(1)
+  await getMatches(0)
   console.log(
     `Found ${allMatches.length} Matches - ${allMatches.length > 100 ? 'You stud' : 'Try harder'}`
   )
