@@ -1,11 +1,15 @@
-// fetch lib as node http methods SUCK ASS `yarn add global node-fetch` etc
+// fetch lib as node http methods SUCK `yarn add global node-fetch` etc
 const fetch = require('node-fetch')
 const fs = require('fs')
 const util = require('util')
 const writeToFile = util.promisify(fs.writeFile)
+const readline = require('readline')
+const cl = readline.createInterface(process.stdin, process.stdout)
 
 // x-auth-token - readme.md
 const token = ''
+
+const question = q => new Promise((res, rej) => cl.question(q, answer => res(answer)))
 
 //
 // THIS IS TERRIBLE CODE
@@ -22,10 +26,10 @@ const headers = {
   'User-agent': 'Tinder/7.5.3 (iPhone; iOS 10.3.2; Scale/2.00)'
 }
 
-const fetchData = async url => {
+const fetchData = async (url, method = 'GET', body) => {
   try {
     console.log('Getting:', url)
-    const res = await fetch(`https://api.gotinder.com/${url}`, { method: 'GET', headers })
+    const res = await fetch(`https://api.gotinder.com/${url}`, { method, body, headers })
     return await res.json()
   } catch (e) {
     console.log('Something broke', e)
@@ -61,7 +65,7 @@ const getProfile = async id => {
   const data = await fetchData(`user/${id}?locale=en-GB`)
   const { name, distance_mi } = data.results
   console.log(name)
-  return { name, distance_mi }
+  return { name, distance_mi, id }
 }
 
 // fix auth ? idk how to make work
@@ -72,33 +76,55 @@ const getProfile = async id => {
 // const token = authData.data.token
 // }
 
+const x = aync 
+
+const messagePeopleCloseBy = async (matches, question = 'Hello! :D') => {
+  // filter people within 5 miles
+  const closeBy = matches.filter(item => item.distance_mi < 5)
+
+  for (const user of closeBy) {
+    // auto send them a message, is this dangerous ?
+    console.log(`Sending ${user.name} a message`)
+    await fetchData(`/user/matches/${user.id}`, 'POST', { message: question })
+  }
+}
+
 const run = async () => {
   // await auth()
-  // the number here is 1 = matches with messages, 0 = matches with no messages
+  const anwer = await question(
+    `Do you want to auto send close by users a message ? Type "YES" if so.    `
+  )
+  const sendMessage = anwer === 'YES'
+  const askedQuestion = sendMessage && (await question(`What message do you want to send?    `))
+
   const profile = await fetchData('/profile')
   const city = profile.pos_info.city.name
   const country = profile.pos_info.country.name
-  console.log(profile)
+  // the number here is 1 = matches with messages, 0 = matches with no messages
   const firstMatches = await getMatches(1)
   const secondMatches = await getMatches(0)
   const allUniqeMatches = [...new Set([...firstMatches, ...secondMatches])]
   let userProfiles = []
+  let shouldMessage = false
 
   console.log(
     `Found ${allUniqeMatches.length} Matches - ${
       allUniqeMatches.length > 100 ? 'You stud' : 'Try harder'
     }`
   )
-  // promise spams the APi too much, try async, slower but works for certain
-  // const promisesList = allMatches.map(getProfile)
-  // await Promise.all(promisesList)
+
   for (const [index, id] of allUniqeMatches.entries()) {
+    // do this one at a time coz trying to make 500+ api calls at same time is a bad idea
     console.log(index)
     const profile = await getProfile(id)
     userProfiles.push(profile)
-    // do this inside the loop, its slow but it means if you got 1k matches and only make 500 its not pointless
+    // do this inside the loop, its slow but it means if you got 1k matches and only makes it to 500 its not pointless
     userProfiles = userProfiles.sort((a, b) => a.distance_mi - b.distance_mi)
     await writeToFile(`results/${country}_${city}.json`, JSON.stringify(userProfiles, null, 4))
+  }
+
+  if (sendMessage) {
+    await messagePeopleCloseBy(userProfiles, askedQuestion)
   }
 
   console.log('DONE')
