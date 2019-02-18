@@ -76,14 +76,13 @@ const getProfile = async id => {
 // const token = authData.data.token
 // }
 
-const x = aync 
-
 const messagePeopleCloseBy = async (matches, question = 'Hello! :D') => {
   // filter people within 5 miles
-  const closeBy = matches.filter(item => item.distance_mi < 5)
+  const closeBy = matches.filter(item => item.distance_mi <= 5)
+
+  console.log(`There are ${closeBy.length} within 5 miles`)
 
   for (const user of closeBy) {
-    // auto send them a message, is this dangerous ?
     console.log(`Sending ${user.name} a message`)
     await fetchData(`/user/matches/${user.id}`, 'POST', { message: question })
   }
@@ -92,14 +91,12 @@ const messagePeopleCloseBy = async (matches, question = 'Hello! :D') => {
 const run = async () => {
   // await auth()
   const anwer = await question(
-    `Do you want to auto send close by users a message ? Type "YES" if so.    `
-  )
-  const sendMessage = anwer === 'YES'
-  const askedQuestion = sendMessage && (await question(`What message do you want to send?    `))
+    `Do you want to auto send close by users a message ? Type "YES" if so.\r\n`
+  ) === 'YES'
+  const askedQuestion = anwer && (await question(`What message do you want to send?\r\n`))
 
-  const profile = await fetchData('/profile')
-  const city = profile.pos_info.city.name
-  const country = profile.pos_info.country.name
+  const { pos_info } = await fetchData('/profile')
+
   // the number here is 1 = matches with messages, 0 = matches with no messages
   const firstMatches = await getMatches(1)
   const secondMatches = await getMatches(0)
@@ -120,10 +117,10 @@ const run = async () => {
     userProfiles.push(profile)
     // do this inside the loop, its slow but it means if you got 1k matches and only makes it to 500 its not pointless
     userProfiles = userProfiles.sort((a, b) => a.distance_mi - b.distance_mi)
-    await writeToFile(`results/${country}_${city}.json`, JSON.stringify(userProfiles, null, 4))
+    await writeToFile(`results/${pos_info.country.name}_${pos_info.city.name}.json`, JSON.stringify(userProfiles, null, 4))
   }
 
-  if (sendMessage) {
+  if (anwer) {
     await messagePeopleCloseBy(userProfiles, askedQuestion)
   }
 
