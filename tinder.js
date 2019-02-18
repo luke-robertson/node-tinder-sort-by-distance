@@ -102,7 +102,6 @@ const run = async () => {
   const secondMatches = await getMatches(0)
   const allUniqeMatches = [...new Set([...firstMatches, ...secondMatches])]
   let userProfiles = []
-  let shouldMessage = false
 
   console.log(
     `Found ${allUniqeMatches.length} Matches - ${
