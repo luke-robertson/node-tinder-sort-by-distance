@@ -16,9 +16,6 @@ if (!token) {
   throw new Error('No token provided - read the README.md')
 }
 
-const allMatches = []
-const allMatchesProfiles = []
-
 const headers = {
   'X-Auth-Token': token,
   'content-type': 'application/json',
@@ -27,6 +24,7 @@ const headers = {
 
 const fetchData = async url => {
   try {
+    console.log('Getting:', url)
     const res = await fetch(`https://api.gotinder.com/${url}`, { method: 'GET', headers })
     return await res.json()
   } catch (e) {
@@ -34,34 +32,36 @@ const fetchData = async url => {
   }
 }
 
-const getMatches = async (messageType, token = undefined) => {
-  try {
-    const tokenFrag = token ? `&page_token=${token}` : ''
-    const matches = await fetchData(
-      `v2/matches?count=60&is_tinder_u=false&locale=en-GB&message=${messageType}${tokenFrag}`
-    )
-    // pushing to array is not ideal, better solution ?
-    allMatches.push(...matches.data.matches.map(item => item.person._id))
-    // if a token is returned, there are more results, loop its self until none left
-    const tokenId = matches.data.next_page_token
-    if (tokenId) {
-      await getMatches(messageType, tokenId)
+const getMatches = async messageType => {
+  const matches = []
+
+  const getMatchesInner = async (token = undefined) => {
+    try {
+      const tokenFrag = token ? `&page_token=${token}` : ''
+      const matchRes = await fetchData(
+        `v2/matches?count=60&is_tinder_u=false&locale=en-GB&message=${messageType}${tokenFrag}`
+      )
+      matches.push(...matchRes.data.matches.map(item => item.person._id))
+      // if a token is returned, there are more results, loop its self until none left
+      const tokenId = matchRes.data.next_page_token
+      if (tokenId) {
+        await getMatchesInner(tokenId)
+      }
+    } catch (e) {
+      console.log(e)
     }
-  } catch (e) {
-    console.log(`Error with: ${token}`)
   }
+
+  await getMatchesInner()
+
+  return matches
 }
 
 const getProfile = async id => {
-  try {
-    const data = await fetchData(`user/${id}?locale=en-GB`)
-    const { name, distance_mi } = data.results
-    console.log(name)
-    // again not idea, but it easy
-    allMatchesProfiles.push({ name, distance_mi })
-  } catch (e) {
-    console.log(`Error with ${id}`)
-  }
+  const data = await fetchData(`user/${id}?locale=en-GB`)
+  const { name, distance_mi } = data.results
+  console.log(name)
+  return { name, distance_mi }
 }
 
 // fix auth ? idk how to make work
@@ -75,20 +75,26 @@ const getProfile = async id => {
 const run = async () => {
   // await auth()
   // the number here is 1 = matches with messages, 0 = matches with no messages
-  await getMatches(1)
-  await getMatches(0)
+  const firstMatches = await getMatches(1)
+  const secondMatches = await getMatches(0)
+  const allUniqeMatches = [...new Set([...firstMatches, ...secondMatches])]
+  let userProfiles = []
+
   console.log(
-    `Found ${allMatches.length} Matches - ${allMatches.length > 100 ? 'You stud' : 'Try harder'}`
+    `Found ${allUniqeMatches.length} Matches - ${
+      allUniqeMatches.length > 100 ? 'You stud' : 'Try harder'
+    }`
   )
-  // promise spams the APi too much, try async
+  // promise spams the APi too much, try async, slower but works for certain
   // const promisesList = allMatches.map(getProfile)
   // await Promise.all(promisesList)
-  for (const [index, id] of allMatches.entries()) {
+  for (const [index, id] of allUniqeMatches.entries()) {
     console.log(index)
-    await getProfile(id)
-    // do this inside the loop, its slow but it mmeans if you got 1k matches and only make 500 its not pointless
-    const sortData = allMatchesProfiles.sort((a, b) => a.distance_mi - b.distance_mi)
-    await writeToFile('data.json', JSON.stringify(sortData, null, 4))
+    const profile = await getProfile(id)
+    userProfiles.push(profile)
+    // do this inside the loop, its slow but it means if you got 1k matches and only make 500 its not pointless
+    userProfiles = userProfiles.sort((a, b) => a.distance_mi - b.distance_mi)
+    await writeToFile('data.json', JSON.stringify(userProfiles, null, 4))
   }
 
   console.log('DONE')
