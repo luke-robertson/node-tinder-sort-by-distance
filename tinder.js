@@ -5,7 +5,7 @@ const util = require('util')
 const writeToFile = util.promisify(fs.writeFile)
 
 // x-auth-token - readme.md
-const token = '7fac6229-1a32-4c20-984d-3f58a9565cea'
+const token = ''
 
 //
 // THIS IS TERRIBLE CODE
