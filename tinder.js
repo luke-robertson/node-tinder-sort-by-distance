@@ -5,7 +5,7 @@ const util = require('util')
 const writeToFile = util.promisify(fs.writeFile)
 
 // x-auth-token - readme.md
-const token = ''
+const token = '7fac6229-1a32-4c20-984d-3f58a9565cea'
 
 //
 // THIS IS TERRIBLE CODE
@@ -75,6 +75,10 @@ const getProfile = async id => {
 const run = async () => {
   // await auth()
   // the number here is 1 = matches with messages, 0 = matches with no messages
+  const profile = await fetchData('/profile')
+  const city = profile.pos_info.city.name
+  const country = profile.pos_info.country.name
+  console.log(profile)
   const firstMatches = await getMatches(1)
   const secondMatches = await getMatches(0)
   const allUniqeMatches = [...new Set([...firstMatches, ...secondMatches])]
@@ -94,7 +98,7 @@ const run = async () => {
     userProfiles.push(profile)
     // do this inside the loop, its slow but it means if you got 1k matches and only make 500 its not pointless
     userProfiles = userProfiles.sort((a, b) => a.distance_mi - b.distance_mi)
-    await writeToFile('data.json', JSON.stringify(userProfiles, null, 4))
+    await writeToFile(`results/${country}_${city}.json`, JSON.stringify(userProfiles, null, 4))
   }
 
   console.log('DONE')
