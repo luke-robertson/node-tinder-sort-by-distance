@@ -137,6 +137,7 @@ const run = async () => {
   }
 
   console.log('DONE')
+  process.exit()
 }
 
 run()
