@@ -42,9 +42,9 @@ const getMatches = async messageType => {
   const getMatchesInner = async (token = undefined) => {
     try {
       const tokenFrag = token ? `&page_token=${token}` : ''
-      const matchRes = await fetchData(
+      const matchRes = (await fetchData(
         `v2/matches?count=60&is_tinder_u=false&locale=en-GB&message=${messageType}${tokenFrag}`
-      )
+      )) || { data: { matches: [] } }
       matches.push(...matchRes.data.matches.map(item => item.person._id))
       // if a token is returned, there are more results, loop its self until none left
       const tokenId = matchRes.data.next_page_token
@@ -57,12 +57,11 @@ const getMatches = async messageType => {
   }
 
   await getMatchesInner()
-
   return matches
 }
 
 const getProfile = async id => {
-  const data = await fetchData(`user/${id}?locale=en-GB`)
+  const data = (await fetchData(`user/${id}?locale=en-GB`)) || { results: {}}
   const { name, distance_mi } = data.results
   console.log(name)
   return { name, distance_mi, id }
@@ -88,19 +87,32 @@ const messagePeopleCloseBy = async (matches, question = 'Hello! :D') => {
   }
 }
 
+const chunk = (arr, size = 20) => {
+  var myArray = []
+  for (var i = 0; i < arr.length; i += size) {
+    myArray.push(arr.slice(i, i + size))
+  }
+  return myArray
+}
+
 const run = async () => {
   // await auth()
-  const anwer = await question(
-    `Do you want to auto send close by users a message ? Type "YES" if so.\r\n`
-  ) === 'YES'
+  const anwer =
+    (await question(
+      `Do you want to auto send close by users a message ? Type "YES" if so.\r\n`
+    )) === 'YES'
   const askedQuestion = anwer && (await question(`What message do you want to send?\r\n`))
 
   const { pos_info } = await fetchData('/profile')
+
+  console.log(`Swiping in: ${pos_info.country.name} ${pos_info.city.name}`)
 
   // the number here is 1 = matches with messages, 0 = matches with no messages
   const firstMatches = await getMatches(1)
   const secondMatches = await getMatches(0)
   const allUniqeMatches = [...new Set([...firstMatches, ...secondMatches])]
+  const chunkProfiles = chunk(allUniqeMatches)
+  console.log(chunkProfiles)
   let userProfiles = []
 
   console.log(
@@ -109,14 +121,15 @@ const run = async () => {
     }`
   )
 
-  for (const [index, id] of allUniqeMatches.entries()) {
-    // do this one at a time coz trying to make 500+ api calls at same time is a bad idea
-    console.log(index)
-    const profile = await getProfile(id)
-    userProfiles.push(profile)
-    // do this inside the loop, its slow but it means if you got 1k matches and only makes it to 500 its not pointless
+  for (const idArray of chunkProfiles) {
+    const promises = idArray.map(getProfile)
+    const profiles = await Promise.all(promises)
+    userProfiles.push(...profiles)
     userProfiles = userProfiles.sort((a, b) => a.distance_mi - b.distance_mi)
-    await writeToFile(`results/${pos_info.country.name}_${pos_info.city.name}.json`, JSON.stringify(userProfiles, null, 4))
+    await writeToFile(
+      `results/${pos_info.country.name}_${pos_info.city.name}.json`,
+      JSON.stringify(userProfiles, null, 4)
+    )
   }
 
   if (anwer) {
