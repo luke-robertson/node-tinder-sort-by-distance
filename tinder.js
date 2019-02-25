@@ -3,18 +3,9 @@ const fetch = require('node-fetch')
 const fs = require('fs')
 const util = require('util')
 const writeToFile = util.promisify(fs.writeFile)
-const readline = require('readline')
-const cl = readline.createInterface(process.stdin, process.stdout)
 
 // x-auth-token - readme.md
 const token = ''
-
-const question = q => new Promise((res, rej) => cl.question(q, answer => res(answer)))
-
-//
-// THIS IS TERRIBLE CODE
-// IT MAY GET STUCK IF YOU HAVE A LOT OF MATCHES, TRY AGAIN
-//
 
 if (!token) {
   throw new Error('No token provided - read the README.md')
@@ -75,18 +66,6 @@ const getProfile = async id => {
 // const token = authData.data.token
 // }
 
-const messagePeopleCloseBy = async (matches, question = 'Hello! :D') => {
-  // filter people within 5 miles
-  const closeBy = matches.filter(item => item.distance_mi <= 5)
-
-  console.log(`There are ${closeBy.length} within 5 miles`)
-
-  for (const user of closeBy) {
-    console.log(`Sending ${user.name} a message`)
-    await fetchData(`/user/matches/${user.id}`, 'POST', { message: question })
-  }
-}
-
 const chunk = (arr, size = 20) => {
   var myArray = []
   for (var i = 0; i < arr.length; i += size) {
@@ -97,11 +76,6 @@ const chunk = (arr, size = 20) => {
 
 const run = async () => {
   // await auth()
-  const anwer =
-    (await question(
-      `Do you want to auto send close by users a message ? Type "YES" if so.\r\n`
-    )) === 'YES'
-  const askedQuestion = anwer && (await question(`What message do you want to send?\r\n`))
 
   const { pos_info } = await fetchData('/profile')
 
@@ -112,7 +86,6 @@ const run = async () => {
   const secondMatches = await getMatches(0)
   const allUniqeMatches = [...new Set([...firstMatches, ...secondMatches])]
   const chunkProfiles = chunk(allUniqeMatches)
-  console.log(chunkProfiles)
   let userProfiles = []
 
   console.log(
@@ -130,10 +103,6 @@ const run = async () => {
       `results/${pos_info.country.name}_${pos_info.city.name}.json`,
       JSON.stringify(userProfiles, null, 4)
     )
-  }
-
-  if (anwer) {
-    await messagePeopleCloseBy(userProfiles, askedQuestion)
   }
 
   console.log('DONE')
