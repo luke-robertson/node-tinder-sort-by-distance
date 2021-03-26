@@ -6,6 +6,7 @@ You can do that by logging into your tinder web app, opening dev tools, find the
 
 webapp:  https://tinder.com/app/recs
 
+You can pass your token as a CLI parameter
 
 data get saved to `results/${country}_${city}.json`
 

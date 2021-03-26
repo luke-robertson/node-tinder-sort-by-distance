@@ -2,10 +2,11 @@
 const fetch = require('node-fetch')
 const fs = require('fs')
 const util = require('util')
+const process = require('process');
 const writeToFile = util.promisify(fs.writeFile)
 
 // x-auth-token - readme.md
-const token = ''
+const token = process.argv[2];
 
 if (!token) {
   throw new Error('No token provided - read the README.md')
@@ -21,7 +22,9 @@ const fetchData = async (url, method = 'GET', body) => {
   try {
     console.log('Getting:', url)
     const res = await fetch(`https://api.gotinder.com/${url}`, { method, body, headers })
-    return await res.json()
+    const json = await res.json();
+    console.log('Response from', `https://api.gotinder.com/${url}`, json)
+    return json;
   } catch (e) {
     console.log('Something broke', e)
   }
@@ -77,9 +80,9 @@ const chunk = (arr, size = 20) => {
 const run = async () => {
   // await auth()
 
-  const { pos_info } = await fetchData('/profile')
+  const { pos_info } = await fetchData('profile')
 
-  console.log(`Swiping in: ${pos_info.country.name} ${pos_info.city.name}`)
+  console.log(`Swiping in: ${pos_info.country.name} ${pos_info.city?.name || ''}`)
 
   // the number here is 1 = matches with messages, 0 = matches with no messages
   const firstMatches = await getMatches(1)
@@ -100,7 +103,7 @@ const run = async () => {
     userProfiles.push(...profiles)
     userProfiles = userProfiles.sort((a, b) => a.distance_mi - b.distance_mi)
     await writeToFile(
-      `results/${pos_info.country.name}_${pos_info.city.name}.json`,
+      `results/${pos_info.country.name}_${pos_info.city?.name || ''}.json`,
       JSON.stringify(userProfiles, null, 4)
     )
   }
